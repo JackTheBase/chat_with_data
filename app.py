@@ -102,7 +102,7 @@ if question:
             explain_prompt = f"""
             The user asked: {question}
             Here is the result: {answer_value}
-            Answer naturally like a human conversation — there's no need to follow any specific structure or summarize.
+            Answer naturally like a human conversation — there's no need to follow any specific structure, avoid robotic intros like 'Okay,' and respond informally if appropriate.
             """
 
             explanation = model.generate_content(explain_prompt)
