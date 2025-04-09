@@ -75,6 +75,7 @@ if question:
     If the result is empty or no records match, store the message 'No matching records found.' in ANSWER.
     Do not import pandas or reload the CSV. Assume the DataFrame is already loaded.
     Make sure to convert the 'date' column to datetime before filtering by year or month.
+    Only return a numeric or string answer. Avoid explanations or summaries.
     """
 
     # Display the question
@@ -103,20 +104,10 @@ if question:
         if "ANSWER" in local_scope:
             answer_value = local_scope["ANSWER"]
 
-            explain_prompt = f"""
-            The user asked: {question}
-            Here is the result: {answer_value}
-            Answer the question, summarize the result, and provide your interpretation of what this tells us about the user's interest.
-            """
-
-            explanation = model.generate_content(explain_prompt)
-            explanation_text = explanation.text.strip()
-
-            st.session_state.chat_history.append({"role": "assistant", "content": explanation_text})
+            st.session_state.chat_history.append({"role": "assistant", "content": str(answer_value)})
 
             with st.chat_message("assistant"):
-                st.markdown("### Answer Summary:")
-                st.markdown(explanation_text)
+                st.markdown(str(answer_value))
 
                 # Display chart if exists
                 if "CHART" in local_scope:
