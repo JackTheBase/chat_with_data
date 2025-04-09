@@ -4,7 +4,7 @@ import google.generativeai as genai
 try:
     key = st.secrets['gemini_api_key']
     genai.configure(api_key=key)
-    model = genai.GenerativeModel('gemini-2.0-flash-lite)
+    model = genai.GenerativeModel('gemini-2.0-flash-lite')
   
     if "chat" not in st.session_state:
         st.session_state.chat = model.start_chat(history=[])
