@@ -74,11 +74,6 @@ if question:
         # ✅ CLEAN THE CODE (remove Markdown like ```python)
         code = re.sub(r"```(?:python)?", "", code).strip()
 
-        # ✅ DISPLAY Gemini's raw output as code
-        with st.chat_message("assistant"):
-            st.markdown("### Generated Code:")
-            st.code(code, language='python')
-
         # ✅ EXECUTE the cleaned code
         local_scope = {
             "transaction_df": transaction_df,
@@ -88,8 +83,19 @@ if question:
 
         # ✅ DISPLAY THE ANSWER
         if "ANSWER" in local_scope:
-            st.markdown("### Result:")
-            st.write(local_scope["ANSWER"])
+            answer_value = local_scope["ANSWER"]
+
+            explain_prompt = f"""
+            The user asked: {question}
+            Here is the result: {answer_value}
+            Answer the question, summarize the result, and provide your interpretation of what this tells us about the user's interest.
+            """
+
+            explanation = model.generate_content(explain_prompt)
+
+            with st.chat_message("assistant"):
+                st.markdown("### Answer Summary:")
+                st.markdown(explanation.text)
         else:
             st.warning("The model did not define an ANSWER variable.")
 
