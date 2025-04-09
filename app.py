@@ -52,6 +52,8 @@ if question:
     If the user's question can be answered using this dataset, write Python code to compute the answer and assign it to a variable named `ANSWER`.
     You may optionally assign a matplotlib chart to `CHART`.
 
+    If the user's message is just a greeting (e.g. "hi", "hello"), respond with a friendly welcome without generating or returning any Python code.
+
     If the user's question cannot be answered from this dataset, reply with a friendly message saying:
     "I'm here to help with this dataset. Unfortunately, that question isn't answerable using the available data."
 
@@ -72,11 +74,16 @@ if question:
 
             if "ANSWER" in local_scope:
                 answer = local_scope["ANSWER"]
-                response_followup = model.generate_content(
-                    f"The user asked: {question}\nHere is the result: {answer}\nRespond to the user with a helpful, friendly answer based strictly on the dataset."
-                )
-                st.chat_message("assistant").markdown(response_followup.text)
-                st.session_state.chat_history.append({"role": "assistant", "content": response_followup.text})
+                if isinstance(answer, (int, float)) and answer == 0:
+                    msg = "It looks like there are no records for that period in the dataset."
+                    st.chat_message("assistant").markdown(msg)
+                    st.session_state.chat_history.append({"role": "assistant", "content": msg})
+                else:
+                    response_followup = model.generate_content(
+                        f"The user asked: {question}\nHere is the result: {answer}\nRespond to the user with a helpful, friendly answer based strictly on the dataset."
+                    )
+                    st.chat_message("assistant").markdown(response_followup.text)
+                    st.session_state.chat_history.append({"role": "assistant", "content": response_followup.text})
 
                 if "CHART" in local_scope:
                     st.pyplot(local_scope["CHART"])
