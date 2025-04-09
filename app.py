@@ -21,99 +21,64 @@ except Exception as e:
     st.error(f"Failed to load CSV files: {e}")
     st.stop()
 
-# Format example data and schema
-def build_data_context(df, dict_df):
-    example_record = df.head(2).to_string()
-    data_dict_text = '\n'.join(
-        '- ' + dict_df['column_name'] + ': ' + dict_df['data_type'] + '. ' + dict_df['description']
-    )
-    return example_record, data_dict_text
-
-example_record, data_dict_text = build_data_context(transaction_df, data_dict_df)
-df_name = "transaction_df"
-
 # Set up the LLM model
 model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
-st.title("Gemini Data Chatbot")
-st.write("Ask a question about the dataset. For example: **How many sales in January 2025?**")
+st.title("Gemini Chatbot with CSV Access")
+st.write("Ask anything! About the world or the uploaded data.")
 
 # Initialize chat history if not present
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
 # Get user question
-question = st.chat_input("Type your question about the dataset here...")
+question = st.chat_input("Type your question here...")
 
 # Run if user enters a question
 if question:
-    # Add to chat history
+    st.chat_message("user").markdown(question)
     st.session_state.chat_history.append({"role": "user", "content": question})
 
-    # Build prompt with history
-    history_text = "\n".join(
-        [f"User: {msg['content']}" if msg['role'] == 'user' else f"Assistant: {msg['content']}" for msg in st.session_state.chat_history]
-    )
+    # Build prompt with memory and context
+    context = f"""
+    You are a helpful assistant who can analyze a DataFrame and also answer general knowledge questions.
 
-    prompt = f"""
-    You are a helpful Python code generator.
-    Your goal is to write Python code snippets based on the user's question and the provided DataFrame information.
+    DataFrame name: transaction_df
+    DataFrame sample (top 2 rows):
+    {transaction_df.head(2).to_string()}
+    
+    Data Dictionary:
+    {data_dict_df.to_string(index=False)}
+    
+    User chat history:
+    {chr(10).join([f"User: {m['content']}" if m['role']=='user' else f"Assistant: {m['content']}" for m in st.session_state.chat_history])}
 
-    {history_text}
-
-    **DataFrame Name:**
-    {df_name}
-
-    **DataFrame Details:**
-    {data_dict_text}
-
-    **Sample Data (Top 2 Rows):**
-    {example_record}
-
-    Write Python code that stores the answer in a variable called ANSWER.
-    If the result is a DataFrame or Series, also store an optional chart object in a variable named CHART.
-    If the result is empty or no records match, store the message 'No matching records found.' in ANSWER.
-    Do not import pandas or reload the CSV. Assume the DataFrame is already loaded.
-    Make sure to convert the 'date' column to datetime before filtering by year or month.
-    Only return a numeric or string answer. Avoid explanations or summaries.
+    If the user's query involves the dataset, write and run Python code to answer it.
+    Otherwise, just respond normally like a general chatbot.
+    Store answers as ANSWER. If needed, add CHART for a matplotlib plot.
     """
 
-    # Display the question
-    st.chat_message("user").markdown(question)
-
     try:
-        response = model.generate_content(prompt)
-        code = response.text
+        response = model.generate_content(context)
+        code = response.text.strip()
 
-        # ✅ CLEAN THE CODE (remove Markdown like ```python)
-        code = re.sub(r"```(?:python)?", "", code).strip()
+        if code.startswith("ANSWER") or "ANSWER" in code:
+            code = re.sub(r"```(?:python)?", "", code).strip()
+            local_scope = {"transaction_df": transaction_df, "pd": pd, "plt": plt}
+            exec(code, {}, local_scope)
 
-        # ✅ BASIC VALIDATION
-        if not code.strip().startswith("ANSWER") and "ANSWER" not in code:
-            raise ValueError("The generated response does not contain valid Python code for ANSWER.")
+            if "ANSWER" in local_scope:
+                answer = local_scope["ANSWER"]
+                st.chat_message("assistant").markdown(str(answer))
+                st.session_state.chat_history.append({"role": "assistant", "content": str(answer)})
 
-        # ✅ EXECUTE the cleaned code
-        local_scope = {
-            "transaction_df": transaction_df,
-            "pd": pd,
-            "plt": plt,
-        }
-        exec(code, {}, local_scope)
-
-        # ✅ DISPLAY THE ANSWER
-        if "ANSWER" in local_scope:
-            answer_value = local_scope["ANSWER"]
-
-            st.session_state.chat_history.append({"role": "assistant", "content": str(answer_value)})
-
-            with st.chat_message("assistant"):
-                st.markdown(str(answer_value))
-
-                # Display chart if exists
                 if "CHART" in local_scope:
                     st.pyplot(local_scope["CHART"])
+            else:
+                st.warning("No ANSWER variable returned.")
         else:
-            st.warning("The model did not define an ANSWER variable.")
+            st.chat_message("assistant").markdown(code)
+            st.session_state.chat_history.append({"role": "assistant", "content": code})
 
     except Exception as e:
-        st.error(f"An error occurred while processing: {e}")
+        st.error(f"An error occurred: {e}")
