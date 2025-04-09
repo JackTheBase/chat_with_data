@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import google.generativeai as genai
 import textwrap
+import re
 
 # Configure Gemini API key from Streamlit secrets
 try:
@@ -13,6 +14,7 @@ except Exception as e:
 # Load data
 try:
     transaction_df = pd.read_csv("transactions.csv")
+    transaction_df['date'] = pd.to_datetime(transaction_df['date'])
     data_dict_df = pd.read_csv("data_dict.csv")
 except Exception as e:
     st.error(f"Failed to load CSV files: {e}")
@@ -59,6 +61,7 @@ if question:
 
     Write Python code that stores the answer in a variable called ANSWER.
     Do not import pandas or reload the CSV. Assume the DataFrame is already loaded.
+    Make sure to convert the 'date' column to datetime before filtering by year or month.
     """
 
     # Display the question
@@ -69,7 +72,6 @@ if question:
         code = response.text
 
         # ✅ CLEAN THE CODE (remove Markdown like ```python)
-        import re
         code = re.sub(r"```(?:python)?", "", code).strip()
 
         # ✅ DISPLAY Gemini's raw output as code
@@ -81,16 +83,7 @@ if question:
         local_scope = {"transaction_df": transaction_df}
         exec(code, {}, local_scope)
 
-        # Display Gemini's response as code
-        with st.chat_message("assistant"):
-            st.markdown("### Generated Code:")
-            st.code(code, language='python')
-
-        # Run the code safely
-        local_scope = {"transaction_df": transaction_df}
-        exec(code, {}, local_scope)
-
-        # Display the answer if defined
+        # ✅ DISPLAY THE ANSWER
         if "ANSWER" in local_scope:
             st.markdown("### Result:")
             st.write(local_scope["ANSWER"])
