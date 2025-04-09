@@ -41,22 +41,24 @@ if question:
 
     # Build prompt with memory and context
     context = f"""
-    You are a helpful assistant who can analyze a DataFrame and also answer general knowledge questions.
+    You are a helpful assistant.
 
-    DataFrame name: transaction_df
-    DataFrame sample (top 2 rows):
+    You have access to a pandas DataFrame called `transaction_df` with the following schema:
+    {data_dict_df.to_string(index=False)}
+
+    Sample rows:
     {transaction_df.head(2).to_string()}
 
-    Data Dictionary:
-    {data_dict_df.to_string(index=False)}
+    If the user's question can be answered using this dataset, write Python code to compute the answer and assign it to a variable named `ANSWER`.
+    You may optionally assign a matplotlib chart to `CHART`.
+
+    If the user's question cannot be answered from this dataset, reply with a friendly message saying:
+    "I'm here to help with this dataset. Unfortunately, that question isn't answerable using the available data."
+
+    Do NOT hallucinate or assume data that isn't there. ONLY answer if the required data is present in `transaction_df`.
 
     User chat history:
     {chr(10).join([f"User: {m['content']}" if m['role']=='user' else f"Assistant: {m['content']}" for m in st.session_state.chat_history])}
-
-    If the user's query involves the dataset, write Python code to compute the answer and store the final answer in a variable called ANSWER.
-    Then respond directly and naturally to the user using that result.
-    If applicable, assign any matplotlib figure to a variable named CHART.
-    If the user's question is not about the data, reply normally as a chatbot.
     """
 
     try:
@@ -71,7 +73,7 @@ if question:
             if "ANSWER" in local_scope:
                 answer = local_scope["ANSWER"]
                 response_followup = model.generate_content(
-                    f"The user asked: {question}\nHere is the result: {answer}\nRespond to the user with a helpful, friendly answer."
+                    f"The user asked: {question}\nHere is the result: {answer}\nRespond to the user with a helpful, friendly answer based strictly on the dataset."
                 )
                 st.chat_message("assistant").markdown(response_followup.text)
                 st.session_state.chat_history.append({"role": "assistant", "content": response_followup.text})
