@@ -74,7 +74,7 @@ if question:
 
             if "ANSWER" in local_scope:
                 answer = local_scope["ANSWER"]
-                if isinstance(answer, (int, float)) and answer == 0:
+                if isinstance(answer, (int, float)) and (answer == 0 or pd.isna(answer)):
                     msg = "It looks like there are no records for that period in the dataset."
                     st.chat_message("assistant").markdown(msg)
                     st.session_state.chat_history.append({"role": "assistant", "content": msg})
