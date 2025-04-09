@@ -46,39 +46,43 @@ if question:
     DataFrame name: transaction_df
     DataFrame sample (top 2 rows):
     {transaction_df.head(2).to_string()}
-    
+
     Data Dictionary:
     {data_dict_df.to_string(index=False)}
-    
+
     User chat history:
     {chr(10).join([f"User: {m['content']}" if m['role']=='user' else f"Assistant: {m['content']}" for m in st.session_state.chat_history])}
 
-    If the user's query involves the dataset, write and run Python code to answer it.
-    Otherwise, just respond normally like a general chatbot.
-    Store answers as ANSWER. If needed, add CHART for a matplotlib plot.
+    If the user's query involves the dataset, write Python code to compute the answer and store the final answer in a variable called ANSWER.
+    Then respond directly and naturally to the user using that result.
+    If applicable, assign any matplotlib figure to a variable named CHART.
+    If the user's question is not about the data, reply normally as a chatbot.
     """
 
     try:
         response = model.generate_content(context)
         code = response.text.strip()
 
-        if code.startswith("ANSWER") or "ANSWER" in code:
+        if "ANSWER" in code:
             code = re.sub(r"```(?:python)?", "", code).strip()
             local_scope = {"transaction_df": transaction_df, "pd": pd, "plt": plt}
             exec(code, {}, local_scope)
 
             if "ANSWER" in local_scope:
                 answer = local_scope["ANSWER"]
-                st.chat_message("assistant").markdown(str(answer))
-                st.session_state.chat_history.append({"role": "assistant", "content": str(answer)})
+                response_followup = model.generate_content(
+                    f"The user asked: {question}\nHere is the result: {answer}\nRespond to the user with a helpful, friendly answer."
+                )
+                st.chat_message("assistant").markdown(response_followup.text)
+                st.session_state.chat_history.append({"role": "assistant", "content": response_followup.text})
 
                 if "CHART" in local_scope:
                     st.pyplot(local_scope["CHART"])
             else:
                 st.warning("No ANSWER variable returned.")
         else:
-            st.chat_message("assistant").markdown(code)
-            st.session_state.chat_history.append({"role": "assistant", "content": code})
+            st.chat_message("assistant").markdown(response.text)
+            st.session_state.chat_history.append({"role": "assistant", "content": response.text})
 
     except Exception as e:
         st.error(f"An error occurred: {e}")
