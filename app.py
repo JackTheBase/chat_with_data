@@ -37,19 +37,29 @@ model = genai.GenerativeModel("gemini-2.0-flash-lite")
 st.title("Gemini Data Chatbot")
 st.write("Ask a question about the dataset. For example: **How many sales in January 2025?**")
 
+# Initialize chat history if not present
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
 # Get user question
 question = st.chat_input("Type your question about the dataset here...")
 
 # Run if user enters a question
 if question:
-    # Build prompt for Gemini
+    # Add to chat history
+    st.session_state.chat_history.append({"role": "user", "content": question})
+
+    # Build prompt with history
+    history_text = "\n".join(
+        [f"User: {msg['content']}" if msg['role'] == 'user' else f"Assistant: {msg['content']}" for msg in st.session_state.chat_history]
+    )
+
     prompt = f"""
     You are a helpful Python code generator.
     Your goal is to write Python code snippets based on the user's question and the provided DataFrame information.
 
-    **User Question:**
-    {question}
-    
+    {history_text}
+
     **DataFrame Name:**
     {df_name}
 
@@ -74,6 +84,10 @@ if question:
         # ✅ CLEAN THE CODE (remove Markdown like ```python)
         code = re.sub(r"```(?:python)?", "", code).strip()
 
+        # ✅ BASIC VALIDATION
+        if not code.strip().startswith("ANSWER") and "ANSWER" not in code:
+            raise ValueError("The generated response does not contain valid Python code for ANSWER.")
+
         # ✅ EXECUTE the cleaned code
         local_scope = {
             "transaction_df": transaction_df,
@@ -92,10 +106,13 @@ if question:
             """
 
             explanation = model.generate_content(explain_prompt)
+            explanation_text = explanation.text.strip()
+
+            st.session_state.chat_history.append({"role": "assistant", "content": explanation_text})
 
             with st.chat_message("assistant"):
                 st.markdown("### Answer Summary:")
-                st.markdown(explanation.text)
+                st.markdown(explanation_text)
         else:
             st.warning("The model did not define an ANSWER variable.")
 
