@@ -67,12 +67,13 @@ if question:
     try:
         response = model.generate_content(prompt)
         code = response.text
-    
-    # Display Gemini's response as code
+
+        # Display Gemini's response as code
         with st.chat_message("assistant"):
             st.markdown("### Generated Code:")
             st.code(code, language='python')
-# Run the code safely
+
+        # Run the code safely
         local_scope = {"transaction_df": transaction_df}
         exec(code, {}, local_scope)
 
