@@ -3,6 +3,7 @@ import pandas as pd
 import google.generativeai as genai
 import textwrap
 import re
+import matplotlib.pyplot as plt
 
 # Configure Gemini API key from Streamlit secrets
 try:
@@ -70,6 +71,7 @@ if question:
     {example_record}
 
     Write Python code that stores the answer in a variable called ANSWER.
+    If the result is a DataFrame or Series, also store an optional chart object in a variable named CHART.
     Do not import pandas or reload the CSV. Assume the DataFrame is already loaded.
     Make sure to convert the 'date' column to datetime before filtering by year or month.
     """
@@ -92,6 +94,7 @@ if question:
         local_scope = {
             "transaction_df": transaction_df,
             "pd": pd,
+            "plt": plt,
         }
         exec(code, {}, local_scope)
 
@@ -113,6 +116,10 @@ if question:
             with st.chat_message("assistant"):
                 st.markdown("### Answer Summary:")
                 st.markdown(explanation_text)
+
+                # Display chart if exists
+                if "CHART" in local_scope:
+                    st.pyplot(local_scope["CHART"])
         else:
             st.warning("The model did not define an ANSWER variable.")
 
