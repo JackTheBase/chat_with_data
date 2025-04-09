@@ -26,4 +26,4 @@ try:
       with st.chat_message('assistant'):
         st.markdown(response.text)
 excecpt Exception as e:
-  st.erro(f'An error occurred {e}')
+  st.error(f'An error occurred {e}')
