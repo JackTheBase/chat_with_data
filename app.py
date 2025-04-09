@@ -80,7 +80,10 @@ if question:
             st.code(code, language='python')
 
         # ✅ EXECUTE the cleaned code
-        local_scope = {"transaction_df": transaction_df}
+        local_scope = {
+            "transaction_df": transaction_df,
+            "pd": pd,
+        }
         exec(code, {}, local_scope)
 
         # ✅ DISPLAY THE ANSWER
