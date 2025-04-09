@@ -68,6 +68,19 @@ if question:
         response = model.generate_content(prompt)
         code = response.text
 
+        # ✅ CLEAN THE CODE (remove Markdown like ```python)
+        import re
+        code = re.sub(r"```(?:python)?", "", code).strip()
+
+        # ✅ DISPLAY Gemini's raw output as code
+        with st.chat_message("assistant"):
+        st.markdown("### Generated Code:")
+        st.code(code, language='python')
+
+        # ✅ EXECUTE the cleaned code
+        local_scope = {"transaction_df": transaction_df}
+        exec(code, {}, local_scope)
+
         # Display Gemini's response as code
         with st.chat_message("assistant"):
             st.markdown("### Generated Code:")
