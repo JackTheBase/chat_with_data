@@ -72,6 +72,7 @@ if question:
 
     Write Python code that stores the answer in a variable called ANSWER.
     If the result is a DataFrame or Series, also store an optional chart object in a variable named CHART.
+    If the result is empty or no records match, store the message 'No matching records found.' in ANSWER.
     Do not import pandas or reload the CSV. Assume the DataFrame is already loaded.
     Make sure to convert the 'date' column to datetime before filtering by year or month.
     """
