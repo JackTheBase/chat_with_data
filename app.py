@@ -7,6 +7,8 @@ import pathlib
 import textwrap
 
 import pandas as pd
+transaction_df = pd.read_csv("transactions.csv")
+data_dict_df = pd.read_csv("data_dict.csv")
 
 from IPython.display import display
 from IPython.display import Markdown
@@ -15,12 +17,12 @@ def to_markdown(text):
   text = text.replace('•', ' *')
   return Markdown(textwrap.indent(text, '> ', predicate=lambda _: True))
 
-transaction_df = pd.read_csv('/content/transactions.csv')
+
 
 transaction_df.head(2).to_string()
 example_record =  transaction_df.head(2).to_string()
 
-data_dict_df = pd.read_csv('/content/data_dict.csv')
+
 data_dict_text = '\n'.join('- '+data_dict_df['column_name']+
                            ': '+data_dict_df['data_type']+
                            '. '+data_dict_df['description'])
