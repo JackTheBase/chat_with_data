@@ -55,6 +55,7 @@ if question:
     )
 
     prompt = f"""
+    You can answer in any languages.
     You are a helpful Python code generator.
     Your goal is to write Python code snippets based on the user's question and the provided DataFrame information.
 
@@ -103,6 +104,8 @@ if question:
             The user asked: {question}
             Here is the result: {answer_value}
             Answer the question, summarize the result, and provide your interpretation of what this tells us about the user's interest.
+
+            If the question is not related to the data, you can answer as a full model gemini
             """
 
             explanation = model.generate_content(explain_prompt)
